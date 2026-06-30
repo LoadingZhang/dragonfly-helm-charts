@@ -57,11 +57,13 @@ helm delete nydus-snapshotter --namespace nydus-snapshotter
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| args | list | `[]` | Args to overwrite default nydus-snapshotter startup command |
+| args | list | `[]` | Args to overwrite default nydus-snapshotter startup command. |
+| command | list | `["bash","-c","/opt/nydus-artifacts/opt/nydus/snapshotter.sh deploy"]` | Command to overwrite default nydus-snapshotter startup command. |
 | containerRuntime | object | `{"containerd":{"configFile":"/etc/containerd/config.toml","enable":true},"initContainer":{"image":{"pullPolicy":"Always","registry":"ghcr.io","repository":"liubin/toml-cli","tag":"v0.0.7"}}}` | [Experimental] Container runtime support Choose special container runtime in Kubernetes. Support: Containerd, Docker, CRI-O |
-| containerRuntime.containerd | object | `{"configFile":"/etc/containerd/config.toml","enable":true}` | [Experimental] Containerd support |
+| containerRuntime.containerd | object | `{"configFile":"/etc/containerd/config.toml","enable":true,"installByScript":true}` | [Experimental] Containerd support |
 | containerRuntime.containerd.configFile | string | `"/etc/containerd/config.toml"` | Custom config path directory, default is /etc/containerd/config.toml |
-| containerRuntime.containerd.enable | bool | `true` | Enable containerd support Inject nydus-snapshotter config into ${containerRuntime.containerd.configFile}, |
+| containerRuntime.containerd.enable | bool | `true` | Enable containerd support. When installByScript is true, containerd configuration is handled by snapshotter.sh instead of the initContainer. Inject nydus-snapshotter config into ${containerRuntime.containerd.configFile}, |
+| containerRuntime.containerd.installByScript | bool | `true` | Configure containerd by running the nydus-snapshotter deployment script in the main container. |
 | containerRuntime.initContainer.image.pullPolicy | string | `"Always"` | Image pull policy. |
 | containerRuntime.initContainer.image.registry | string | `"ghcr.io"` | Image registry. |
 | containerRuntime.initContainer.image.repository | string | `"liubin/toml-cli"` | Image repository. |
@@ -78,6 +80,10 @@ helm delete nydus-snapshotter --namespace nydus-snapshotter
 | dragonfly.proxy.config.ping_url | string | `"http://127.0.0.1:4003/healthy"` |  |
 | dragonfly.proxy.config.url | string | `"http://127.0.0.1:4001"` |  |
 | dragonfly.proxy.enable | bool | `false` | Enable Dragonfly HTTP proxy mode for nydusd registry backend. If enabled, proxy.config is rendered instead of mirrorConfig. |
+| env.enableConfigFromVolume | bool | `true` | Read nydus configuration files from the config volume mounted at /etc/nydus-snapshotter. |
+| env.enableRuntimeSpecificSnapshotter | bool | `false` | Enable runtime-specific snapshotter instead of setting containerd default snapshotter to nydus. |
+| env.enableSystemdService | bool | `true` | Run nydus-snapshotter as a host systemd service. |
+| env.fsDriver | string | `"fusedev"` | Filesystem driver for nydus-snapshotter. Supported values include fusedev, fscache, blockdev and proxy. |
 | global.imagePullSecrets | list | `[]` | Global Docker registry secret names as an array. |
 | global.imageRegistry | string | `""` | Global Docker image registry. |
 | global.nodeSelector | object | `{}` | Global node labels for pod assignment. |
@@ -88,11 +94,12 @@ helm delete nydus-snapshotter --namespace nydus-snapshotter
 | image.pullSecrets | list | `[]` (defaults to global.imagePullSecrets). | Image pull secrets. |
 | image.registry | string | `"ghcr.io"` | Image registry. |
 | image.repository | string | `"containerd/nydus-snapshotter"` | Image repository. |
-| image.tag | string | `"v0.9.0"` | Image tag. |
+| image.tag | string | `"v0.15.15"` | Image tag. |
 | name | string | `"nydus-snapshotter"` | nydus-snapshotter name |
 | nodeSelector | object | `{}` | Node labels for pod assignment |
 | podAnnotations | object | `{}` | Pod annotations |
 | podLabels | object | `{}` | Pod labels |
+| preStopCleanup | bool | `true` | Cleanup nydus-snapshotter and restore container runtime configuration when the pod stops. |
 | priorityClassName | string | `""` | Pod priorityClassName |
 | resources | object | `{"limits":{"cpu":"2","memory":"2Gi"},"requests":{"cpu":"0","memory":"0"}}` | Pod resource requests and limits |
 | terminationGracePeriodSeconds | string | `nil` | Pod terminationGracePeriodSeconds |

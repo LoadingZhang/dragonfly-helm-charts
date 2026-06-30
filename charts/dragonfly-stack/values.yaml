@@ -1437,7 +1437,7 @@ nydus-snapshotter:
     # -- Image repository.
     repository: containerd/nydus-snapshotter
     # -- Image tag.
-    tag: v0.9.0
+    tag: v0.15.15
     # -- Image pull policy.
     pullPolicy: Always
     # -- Image pull secrets.
@@ -1449,8 +1449,26 @@ nydus-snapshotter:
   hostPid: true
   # -- Host Aliases
   hostAliases: []
-  # -- Args to overwrite default nydus-snapshotter startup command
+  # -- Command to overwrite default nydus-snapshotter startup command.
+  command:
+  - bash
+  - -c
+  - |-
+    /opt/nydus-artifacts/opt/nydus/snapshotter.sh deploy
+  # -- Args to overwrite default nydus-snapshotter startup command.
   args: []
+  # -- Environment variables for nydus-snapshotter deployment script.
+  env:
+    # -- Filesystem driver for nydus-snapshotter. Supported values include fusedev, fscache, blockdev and proxy.
+    fsDriver: fusedev
+    # -- Read nydus configuration files from the config volume mounted at /etc/nydus-snapshotter.
+    enableConfigFromVolume: true
+    # -- Enable runtime-specific snapshotter instead of setting containerd default snapshotter to nydus.
+    enableRuntimeSpecificSnapshotter: false
+    # -- Run nydus-snapshotter as a host systemd service.
+    enableSystemdService: true
+  # -- Cleanup nydus-snapshotter and restore container runtime configuration when the pod stops.
+  preStopCleanup: true
   # -- Pod resource requests and limits
   resources:
     requests:
@@ -1508,8 +1526,10 @@ nydus-snapshotter:
         pullPolicy: Always
     # -- [Experimental] Containerd support
     containerd:
-      # -- Enable containerd support
+      # -- Enable containerd support. When installByScript is true, containerd configuration is handled by snapshotter.sh instead of the initContainer.
       # Inject nydus-snapshotter config into ${containerRuntime.containerd.configFile},
       enable: false
+      # -- Configure containerd by running the nydus-snapshotter deployment script in the main container.
+      installByScript: true
       # -- Custom config path directory, default is /etc/containerd/config.toml
       configFile: "/etc/containerd/config.toml"

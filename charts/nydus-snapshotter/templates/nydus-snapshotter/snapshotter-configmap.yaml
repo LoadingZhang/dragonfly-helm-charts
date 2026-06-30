@@ -9,6 +9,90 @@ metadata:
     heritage: {{ .Release.Service }}
     component: {{ .Values.name }}
 data:
+  config.toml: |-
+    version = 1
+    # Snapshotter's own home directory where it stores and creates necessary resources
+    root = "/var/lib/containerd/io.containerd.snapshotter.v1.nydus"
+    # The snapshotter's GRPC server socket, containerd will connect to plugin on this socket
+    address = "/run/containerd-nydus/containerd-nydus-grpc.sock"
+    # The nydus daemon mode can be one of the following options: multiple, dedicated, shared, or none.
+    daemon_mode = "multiple"
+    cleanup_on_close = false
+
+    [system]
+    enable = true
+    address = "/run/containerd-nydus/system.sock"
+
+    [system.debug]
+    daemon_cpu_profile_duration_secs = 5
+    pprof_address = ""
+
+    [daemon]
+    # The nydusd configuration file is rendered by this ConfigMap as config.json.
+    nydusd_config = "/etc/nydus/config.json"
+    nydusd_path = "/usr/local/bin/nydusd"
+    nydusimage_path = "/usr/local/bin/nydus-image"
+    fs_driver = {{ .Values.env.fsDriver | quote }}
+    recover_policy = "failover"
+    threads_number = 4
+    log_rotation_size = 100
+    failover_policy = "resend"
+
+    [cgroup]
+    enable = true
+    memory_limit = ""
+
+    [log]
+    log_to_stdout = false
+    level = "info"
+    log_rotation_compress = true
+    log_rotation_local_time = true
+    log_rotation_max_age = 7
+    log_rotation_max_backups = 5
+    log_rotation_max_size = 100
+
+    [metrics]
+    address = ":9110"
+    hung_io_interval = "10s"
+    collect_interval = "1m"
+
+    [remote]
+    convert_vpc_registry = false
+
+    [remote.mirrors_config]
+
+    [remote.auth]
+    enable_kubeconfig_keychain = false
+    kubeconfig_path = ""
+    enable_cri_keychain = false
+    credential_renewal_interval = "0s"
+
+    [snapshot]
+    enable_nydus_overlayfs = false
+    nydus_overlayfs_path = "nydus-overlayfs"
+    enable_kata_volume = false
+    sync_remove = false
+    enable_overlayfs_volatile = false
+
+    [cache_manager]
+    disable = false
+    gc_period = "24h"
+    cache_dir = ""
+
+    [image]
+    public_key_file = ""
+    validate_signature = false
+
+    [experimental]
+    enable_stargz = false
+    enable_referrer_detect = false
+    enable_index_detect = false
+    enable_backend_source = false
+
+    [experimental.tarfs]
+    enable_tarfs = false
+    export_mode = "layer_block_with_verity"
+
   config.json: |-
     {
       "device": {

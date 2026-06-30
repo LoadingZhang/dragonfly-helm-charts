@@ -66,20 +66,33 @@ spec:
         image: {{ template "nydus-snapshotter.image" . }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         env:
-        - name: ENABLE_NYDUS_OVERLAY
-          value: "false"
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: FS_DRIVER
+          value: {{ .Values.env.fsDriver | quote }}
+        - name: ENABLE_CONFIG_FROM_VOLUME
+          value: {{ .Values.env.enableConfigFromVolume | quote }}
+        - name: ENABLE_RUNTIME_SPECIFIC_SNAPSHOTTER
+          value: {{ .Values.env.enableRuntimeSpecificSnapshotter | quote }}
+        - name: ENABLE_SYSTEMD_SERVICE
+          value: {{ .Values.env.enableSystemdService | quote }}
         resources:
 {{ toYaml .Values.resources | indent 12 }}
-        {{- if .Values.containerRuntime.containerd.enable }}
+        {{- if .Values.preStopCleanup }}
         lifecycle:
-          postStart:
+          preStop:
             exec:
               command:
-              - "/bin/sh"
+              - "bash"
               - "-c"
               - |
-                # currently, without host pid in container, we can not nsenter with pid and can not invoke systemctl correctly.
-                nsenter -t 1 -m systemctl -- restart containerd.service
+                /opt/nydus-artifacts/opt/nydus/snapshotter.sh cleanup
+        {{- end }}
+        {{- if .Values.command }}
+        command:
+{{ toYaml .Values.command | indent 12 }}
         {{- end }}
         {{- if .Values.args }}
         args:
@@ -87,13 +100,25 @@ spec:
         {{- end }}
         volumeMounts:
         - name: config
-          mountPath: "/etc/nydus/"
+          mountPath: "/etc/nydus-snapshotter"
         - name: nydus-lib
-          mountPath: "/var/lib/containerd-nydus"
+          mountPath: "/var/lib/containerd/io.containerd.snapshotter.v1.nydus"
           mountPropagation: Bidirectional
         - name: nydus-run
           mountPath: "/run/containerd-nydus"
           mountPropagation: Bidirectional
+        - name: nydus-opt
+          mountPath: "/opt/nydus"
+          mountPropagation: Bidirectional
+        - name: nydus-etc
+          mountPath: "/etc/nydus"
+          mountPropagation: Bidirectional
+        - name: containerd-conf
+          mountPath: "/etc/containerd/"
+        - name: local-bin
+          mountPath: "/usr/local/bin/"
+        - name: etc-systemd-system
+          mountPath: "/etc/systemd/system/"
         - name: fuse
           mountPath: "/dev/fuse"
 
@@ -101,7 +126,7 @@ spec:
           privileged: true
 
       initContainers:
-      {{- if .Values.containerRuntime.containerd.enable }}
+      {{- if and .Values.containerRuntime.containerd.enable (not .Values.containerRuntime.containerd.installByScript) }}
       - name: update-containerd
         image: {{ template "nydus-snapshotter.initContainer.image" . }}
         imagePullPolicy: {{ .Values.containerRuntime.initContainer.image.pullPolicy }}
@@ -132,7 +157,7 @@ spec:
           EOF
 
         volumeMounts:
-        - name: containerd-conf
+        - name: containerd-conf-file
           mountPath: {{ .Values.containerRuntime.containerd.configFile }}
       {{- end }}
 
@@ -140,19 +165,37 @@ spec:
       - name: config
         configMap:
           name: {{ template "nydus-snapshotter.fullname" . }}
+          optional: true
       - name: nydus-run
         hostPath:
           path: /run/containerd-nydus
           type: DirectoryOrCreate
       - name: nydus-lib
         hostPath:
-          path: /var/lib/containerd-nydus
+          path: /var/lib/containerd/io.containerd.snapshotter.v1.nydus
           type: DirectoryOrCreate
+      - name: nydus-opt
+        hostPath:
+          path: /opt/nydus
+          type: DirectoryOrCreate
+      - name: nydus-etc
+        hostPath:
+          path: /etc/nydus
+          type: DirectoryOrCreate
+      - name: containerd-conf
+        hostPath:
+          path: /etc/containerd/
+      - name: local-bin
+        hostPath:
+          path: /usr/local/bin/
+      - name: etc-systemd-system
+        hostPath:
+          path: /etc/systemd/system/
       - name: fuse
         hostPath:
           path: /dev/fuse
-      {{- if .Values.containerRuntime.containerd.enable }}
-      - name: containerd-conf
+      {{- if and .Values.containerRuntime.containerd.enable (not .Values.containerRuntime.containerd.installByScript) }}
+      - name: containerd-conf-file
         hostPath:
           path: {{ .Values.containerRuntime.containerd.configFile }}
       {{- end }}
