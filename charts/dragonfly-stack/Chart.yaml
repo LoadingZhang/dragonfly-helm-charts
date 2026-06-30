@@ -3,7 +3,7 @@ name: dragonfly-stack
 description: Collects Dragonfly component and Nydus component into a single chart to provide a complete solution for the Dragonfly stack.
 icon: https://raw.githubusercontent.com/dragonflyoss/dragonfly/main/docs/images/logo/dragonfly.svg
 type: application
-version: 0.1.2
+version: 0.1.3
 appVersion: 2.1.49
 keywords:
   - dragonfly-stack
@@ -31,7 +31,7 @@ sources:
 
 annotations:
   artifacthub.io/changes: |
-    - Rename repo Dragonfly2 to dragonfly.
+    - Add Dragonfly HTTP proxy mode support for nydus-snapshotter.
 
   artifacthub.io/links: |
     - name: Chart Source
@@ -49,6 +49,6 @@ dependencies:
     repository: https://dragonflyoss.github.io/helm-charts/
     condition: dragonfly.enable
   - name: nydus-snapshotter
-    version: 0.0.10
+    version: 0.0.11
     repository: https://dragonflyoss.github.io/helm-charts/
     condition: nydus-snapshotter.enable

@@ -72,6 +72,12 @@ helm delete nydus-snapshotter --namespace nydus-snapshotter
 | dragonfly.mirrorConfig[0].headers.X-Dragonfly-Registry | string | `"https://index.docker.io"` |  |
 | dragonfly.mirrorConfig[0].host | string | `"http://127.0.0.1:4001"` |  |
 | dragonfly.mirrorConfig[0].ping_url | string | `"http://127.0.0.1:4003/healthy"` |  |
+| dragonfly.proxy.config | object | `{"check_interval":5,"fallback":true,"ping_url":"http://127.0.0.1:4003/healthy","url":"http://127.0.0.1:4001"}` | Dragonfly HTTP proxy mode configuration for nydusd registry backend. |
+| dragonfly.proxy.config.check_interval | int | `5` |  |
+| dragonfly.proxy.config.fallback | bool | `true` |  |
+| dragonfly.proxy.config.ping_url | string | `"http://127.0.0.1:4003/healthy"` |  |
+| dragonfly.proxy.config.url | string | `"http://127.0.0.1:4001"` |  |
+| dragonfly.proxy.enable | bool | `false` | Enable Dragonfly HTTP proxy mode for nydusd registry backend. If enabled, proxy.config is rendered instead of mirrorConfig. |
 | global.imagePullSecrets | list | `[]` | Global Docker registry secret names as an array. |
 | global.imageRegistry | string | `""` | Global Docker image registry. |
 | global.nodeSelector | object | `{}` | Global node labels for pod assignment. |

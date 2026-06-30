@@ -15,7 +15,10 @@ data:
         "backend": {
           "type": "registry",
           "config": {
-          {{- if .Values.dragonfly.enable }}
+          {{- $dragonflyProxy := default dict .Values.dragonfly.proxy }}
+          {{- if and .Values.dragonfly.enable ($dragonflyProxy.enable) }}
+            "proxy": {{ mustToJson $dragonflyProxy.config }},
+          {{- else if .Values.dragonfly.enable }}
             "mirrors": {{ mustToJson .Values.dragonfly.mirrorConfig }},
           {{- end }}
             "timeout": 5,
